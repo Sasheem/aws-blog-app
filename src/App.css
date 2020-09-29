@@ -144,9 +144,9 @@ textarea {
 	font-size: 1.2rem;
 }
 button {
-	width: 30%;
+	/* width: 30%; */
 	background-color: rgb(49, 142, 248);
-	padding: 0.8rem;
+	padding: 0.8rem 2.5rem;
 	font-weight: 500;
 	border-radius: 4px;
 	float: right;
@@ -154,6 +154,8 @@ button {
 	font-size: 1rem;
 	cursor: pointer;
 	margin-top: 15px;
+	margin-right: 15px;
+	border: none;
 }
 
 .users-liked {
