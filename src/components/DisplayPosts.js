@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import { listPosts } from '../graphql/queries';
 import { API, graphqlOperation } from 'aws-amplify';
-import DeletePosts from './DeletePosts';
-import EditPosts from './EditPosts';
+import DeletePost from './DeletePost';
+import EditPost from './EditPost';
+import { onCreatePost } from '../graphql/subscriptions';
 
 class DisplayPosts extends Component {
 	state = {
@@ -11,6 +12,22 @@ class DisplayPosts extends Component {
 
 	componentDidMount = async () => {
 		this.getPosts();
+		this.createPostListener = API.graphql(
+			graphqlOperation(onCreatePost)
+		).subscribe({
+			next: (postData) => {
+				const newPost = postData.value.data.onCreatePost;
+				const prevPosts = this.state.posts.filter(
+					(post) => post.id !== newPost.id
+				);
+				const updatedPosts = [newPost, ...prevPosts];
+				this.setState({ posts: updatedPosts });
+			},
+		});
+	};
+
+	componentWillUnmount = () => {
+		this.createPostListener.unsubscribe();
 	};
 
 	getPosts = async () => {
@@ -37,8 +54,8 @@ class DisplayPosts extends Component {
 					<p>{post.postBody}</p>
 					<br />
 					<span>
-						<DeletePosts />
-						<EditPosts />
+						<DeletePost />
+						<EditPost />
 					</span>
 				</div>
 			);
