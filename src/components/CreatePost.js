@@ -1,4 +1,4 @@
-import { API, graphqlOperation } from 'aws-amplify';
+import { API, graphqlOperation, Auth } from 'aws-amplify';
 import React, { Component } from 'react';
 import { createPost } from '../graphql/mutations';
 
@@ -11,18 +11,22 @@ class CreatePost extends Component {
 	};
 
 	componentDidMount = async () => {
-		/**
-		 * todo TBA
-		 */
+		await Auth.currentUserInfo().then((user) => {
+			console.log(`User: ${user.username}`);
+			console.dir(user);
+			this.setState({
+				postOwnerId: user.attributes.sub,
+				postOwnerUsername: user.username,
+			});
+		});
 	};
 
 	handleAddPost = async (event) => {
 		event.preventDefault();
-		// const { postOwnerId, postOwnerUsername, postTitle, postBody } = this.state;
-		const { postTitle, postBody } = this.state;
+		const { postOwnerId, postOwnerUsername, postTitle, postBody } = this.state;
 		const input = {
-			postOwnerId: 'd&&195',
-			postOwnerUsername: 'HardCoded',
+			postOwnerId,
+			postOwnerUsername,
 			postTitle,
 			postBody,
 			createdAt: new Date().toISOString(),
