@@ -7,7 +7,10 @@ import {
 	onCreatePost,
 	onDeletePost,
 	onUpdatePost,
+	onCreateComment,
 } from '../graphql/subscriptions';
+import CreateCommentPost from './CreateCommentPost';
+import CommentPost from './CommentPost';
 
 class DisplayPosts extends Component {
 	state = {
@@ -57,12 +60,28 @@ class DisplayPosts extends Component {
 				this.setState({ posts: updatePosts });
 			},
 		});
+
+		this.createPostCommentListener = API.graphql(
+			graphqlOperation(onCreateComment)
+		).subscribe({
+			next: (commentData) => {
+				const createdComment = commentData.value.data.onCreateComment;
+				let posts = [...this.state.posts];
+				for (let post of posts) {
+					if (createdComment.post.id === post.id) {
+						post.comments.items.push(createdComment);
+					}
+				}
+				this.setState({ posts });
+			},
+		});
 	};
 
 	componentWillUnmount = () => {
 		this.createPostListener.unsubscribe();
 		this.deletePostListener.unsubscribe();
 		this.updatePostListener.unsubscribe();
+		this.createPostCommentListener.unsubscribe();
 	};
 
 	getPosts = async () => {
@@ -77,6 +96,7 @@ class DisplayPosts extends Component {
 			return (
 				<div className='posts' style={rowStyle} key={post.id}>
 					<h2>{post.postTitle}</h2>
+
 					<span style={{ fontStyle: 'italic', color: '#0ca5e297' }}>
 						{'Wrote By: '}
 						{post.postOwnerUsername}
@@ -86,11 +106,25 @@ class DisplayPosts extends Component {
 							{new Date(post.createdAt).toDateString()}
 						</time>
 					</span>
+
 					<p>{post.postBody}</p>
 					<br />
+
 					<span>
 						<DeletePost data={post} />
 						<EditPost {...post} />
+					</span>
+
+					<span>
+						<CreateCommentPost postId={post.id} />
+						{post.comments.items.length > 0 && (
+							<span style={{ fontSize: '19px', color: 'grey' }}>
+								Comments:{' '}
+								{post.comments.items.map((comment, index) => (
+									<CommentPost key={index} commentData={comment} />
+								))}
+							</span>
+						)}
 					</span>
 				</div>
 			);
