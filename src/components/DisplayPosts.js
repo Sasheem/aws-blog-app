@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { listPosts } from '../graphql/queries';
-import { API, graphqlOperation } from 'aws-amplify';
+import { API, Auth, graphqlOperation } from 'aws-amplify';
 import DeletePost from './DeletePost';
 import EditPost from './EditPost';
 import {
@@ -8,17 +8,30 @@ import {
 	onDeletePost,
 	onUpdatePost,
 	onCreateComment,
+	onCreateLike,
 } from '../graphql/subscriptions';
+import { createLike } from '../graphql/mutations';
 import CreateCommentPost from './CreateCommentPost';
 import CommentPost from './CommentPost';
+import { FaThumbsUp } from 'react-icons/fa';
 
 class DisplayPosts extends Component {
 	state = {
+		ownerId: '',
+		ownerUsername: '',
+		isHovering: false,
 		posts: [],
 	};
 
 	componentDidMount = async () => {
 		this.getPosts();
+
+		await Auth.currentUserInfo().then((user) => {
+			this.setState({
+				ownerId: user.attributes.sub,
+				ownerUsername: user.username,
+			});
+		});
 		this.createPostListener = API.graphql(
 			graphqlOperation(onCreatePost)
 		).subscribe({
@@ -75,6 +88,22 @@ class DisplayPosts extends Component {
 				this.setState({ posts });
 			},
 		});
+
+		this.createPostLikeListener = API.graphql(
+			graphqlOperation(onCreateLike)
+		).subscribe({
+			next: (postData) => {
+				const createdLike = postData.value.data.onCreateLike;
+				let posts = [...this.state.posts];
+				for (let post of posts) {
+					if (createdLike.post.id === post.id) {
+						post.likes.items.push(createdLike);
+					}
+				}
+
+				this.setState({ posts });
+			},
+		});
 	};
 
 	componentWillUnmount = () => {
@@ -82,12 +111,46 @@ class DisplayPosts extends Component {
 		this.deletePostListener.unsubscribe();
 		this.updatePostListener.unsubscribe();
 		this.createPostCommentListener.unsubscribe();
+		this.createPostLikeListener.unsubscribe();
 	};
 
 	getPosts = async () => {
 		const result = await API.graphql(graphqlOperation(listPosts));
 		this.setState({ posts: result.data.listPosts.items });
 		console.dir(result.data.listPosts.items);
+	};
+
+	// ensures people can't like their own post
+	likedPost = (postId) => {
+		for (let post of this.state.posts) {
+			// check if this is the same post
+			if (post.id === postId) {
+				// check if postOwner in question is the logged in user
+				if (post.postOwnerId === this.state.ownerId) return true;
+				// not then loop thru likes
+				for (let like of post.likes.items) {
+					if (like.likeOwnerId === this.state.ownerId) return true;
+				}
+			}
+		}
+		return false;
+	};
+
+	handleLike = async (postId) => {
+		const input = {
+			numberLikes: 1,
+			likeOwnerId: this.state.ownerId,
+			likeOwnerUsername: this.state.ownerUsername,
+			likePostId: postId,
+		};
+
+		try {
+			const result = await API.graphql(graphqlOperation(createLike, { input }));
+			console.log(`Liked: ${result.data}`);
+			console.dir(result.data);
+		} catch (error) {
+			console.error(`Error handleLike: ${error.message}`);
+		}
 	};
 
 	render() {
@@ -113,6 +176,12 @@ class DisplayPosts extends Component {
 					<span>
 						<DeletePost data={post} />
 						<EditPost {...post} />
+
+						<span>
+							<p onClick={() => this.handleLike(post.id)}>
+								<FaThumbsUp />
+							</p>
+						</span>
 					</span>
 
 					<span>
