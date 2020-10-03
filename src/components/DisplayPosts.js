@@ -180,6 +180,7 @@ class DisplayPosts extends Component {
 						<span>
 							<p onClick={() => this.handleLike(post.id)}>
 								<FaThumbsUp />
+								{post.likes.items.length}
 							</p>
 						</span>
 					</span>
