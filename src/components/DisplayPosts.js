@@ -197,45 +197,58 @@ class DisplayPosts extends Component {
 		let loggedInUser = this.state.ownerId;
 
 		return posts.map((post) => {
+			const {
+				id,
+				postTitle,
+				postOwnerUsername,
+				createdAt,
+				postBody,
+				postOwnerId,
+				likes,
+				comments,
+			} = post;
 			return (
 				<div className='posts' style={rowStyle} key={post.id}>
-					<h2>{post.postTitle}</h2>
+					<h2>{postTitle}</h2>
 
 					<span style={{ fontStyle: 'italic', color: '#0ca5e297' }}>
 						{'Wrote By: '}
-						{post.postOwnerUsername}
+						{postOwnerUsername}
 						{' on '}
 						<time style={{ fontStyle: 'inherit' }}>
 							{' '}
-							{new Date(post.createdAt).toDateString()}
+							{new Date(createdAt).toDateString()}
 						</time>
 					</span>
 
-					<p>{post.postBody}</p>
+					<p>{postBody}</p>
 					<br />
 
 					<span>
-						{post.postOwnerId === loggedInUser && <DeletePost data={post} />}
-						{post.postOwnerId === loggedInUser && <EditPost {...post} />}
+						{postOwnerId === loggedInUser && <DeletePost data={post} />}
+						{postOwnerId === loggedInUser && <EditPost {...post} />}
 
 						<span>
 							<p className='alert'>
-								{post.postOwnerId === loggedInUser && this.state.errorMessage}
+								{postOwnerId === loggedInUser && this.state.errorMessage}
 							</p>
 							<p
 								onMouseEnter={() => this.handleMouseHover(post.id)}
 								onMouseLeave={() => this.handleMouseHoverLeave()}
 								style={{
 									display: 'inline-block',
-									color: post.likes.items.length > 0 ? 'blue' : 'grey',
+									color:
+										likes.items.length && likes.items.length > 0
+											? 'blue'
+											: 'grey',
 								}}
 								className='like-button'
-								onClick={() => this.handleLike(post.id)}
+								onClick={() => this.handleLike(id)}
 							>
 								<FaThumbsUp />
 								{post.likes.items.length}
 							</p>
-							{this.state.isHovering && post.id === this.state.hoveringPostId && (
+							{this.state.isHovering && id === this.state.hoveringPostId && (
 								<div className='users-liked'>
 									{this.state.postLikedBy.length > 0
 										? 'Liked by: '
@@ -252,11 +265,11 @@ class DisplayPosts extends Component {
 					</span>
 
 					<span>
-						<CreateCommentPost postId={post.id} />
-						{post.comments.items.length > 0 && (
+						<CreateCommentPost postId={id} />
+						{comments.items.length > 0 && (
 							<span style={{ fontSize: '19px', color: 'grey' }}>
 								Comments:{' '}
-								{post.comments.items.map((comment, index) => (
+								{comments.items.map((comment, index) => (
 									<CommentPost key={index} commentData={comment} />
 								))}
 							</span>
