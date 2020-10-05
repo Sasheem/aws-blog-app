@@ -13,7 +13,8 @@ import {
 import { createLike } from '../graphql/mutations';
 import CreateCommentPost from './CreateCommentPost';
 import CommentPost from './CommentPost';
-import { FaThumbsUp } from 'react-icons/fa';
+import UsersWhoLikedPost from './UsersWhoLikedPost';
+import { FaThumbsUp, FaSadTear } from 'react-icons/fa';
 
 class DisplayPosts extends Component {
 	state = {
@@ -22,6 +23,7 @@ class DisplayPosts extends Component {
 		errorMessage: '',
 		postLikedBy: [],
 		isHovering: false,
+		hoveringPostId: '',
 		posts: [],
 	};
 
@@ -162,6 +164,34 @@ class DisplayPosts extends Component {
 		}
 	};
 
+	handleMouseHover = async (postId) => {
+		this.setState({
+			isHovering: !this.state.isHovering,
+			hoveringPostId: postId,
+		});
+
+		let innerLikes = this.state.postLikedBy;
+
+		// loop through posts and then likes for desired post
+		for (let post of this.state.posts) {
+			if (post.id === postId) {
+				for (let like of post.likes.items) {
+					innerLikes.push(like.likeOwnerUsername);
+				}
+			}
+			this.setState({ postLikedBy: innerLikes });
+		}
+		console.log(`Post Liked By:`, this.state.postLikedBy);
+	};
+
+	handleMouseHoverLeave = async () => {
+		this.setState({
+			isHovering: !this.state.isHovering,
+			postLikedBy: [],
+			hoveringPostId: '',
+		});
+	};
+
 	render() {
 		const { posts } = this.state;
 		let loggedInUser = this.state.ownerId;
@@ -192,10 +222,32 @@ class DisplayPosts extends Component {
 							<p className='alert'>
 								{post.postOwnerId === loggedInUser && this.state.errorMessage}
 							</p>
-							<p onClick={() => this.handleLike(post.id)}>
+							<p
+								onMouseEnter={() => this.handleMouseHover(post.id)}
+								onMouseLeave={() => this.handleMouseHoverLeave()}
+								style={{
+									display: 'inline-block',
+									color: post.likes.items.length > 0 ? 'blue' : 'grey',
+								}}
+								className='like-button'
+								onClick={() => this.handleLike(post.id)}
+							>
 								<FaThumbsUp />
 								{post.likes.items.length}
 							</p>
+							{this.state.isHovering && post.id === this.state.hoveringPostId && (
+								<div className='users-liked'>
+									{this.state.postLikedBy.length > 0
+										? 'Liked by: '
+										: 'Liked by no one: '}
+
+									{this.state.postLikedBy.length === 0 ? (
+										<FaSadTear />
+									) : (
+										<UsersWhoLikedPost data={this.state.postLikedBy} />
+									)}
+								</div>
+							)}
 						</span>
 					</span>
 
