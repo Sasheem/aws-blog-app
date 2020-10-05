@@ -19,6 +19,8 @@ class DisplayPosts extends Component {
 	state = {
 		ownerId: '',
 		ownerUsername: '',
+		errorMessage: '',
+		postLikedBy: [],
 		isHovering: false,
 		posts: [],
 	};
@@ -137,24 +139,33 @@ class DisplayPosts extends Component {
 	};
 
 	handleLike = async (postId) => {
-		const input = {
-			numberLikes: 1,
-			likeOwnerId: this.state.ownerId,
-			likeOwnerUsername: this.state.ownerUsername,
-			likePostId: postId,
-		};
+		// check if logged in user is liking their own post
+		if (this.likedPost(postId)) {
+			return this.setState({ errorMessage: 'Can not like your own post' });
+		} else {
+			const input = {
+				numberLikes: 1,
+				likeOwnerId: this.state.ownerId,
+				likeOwnerUsername: this.state.ownerUsername,
+				likePostId: postId,
+			};
 
-		try {
-			const result = await API.graphql(graphqlOperation(createLike, { input }));
-			console.log(`Liked: ${result.data}`);
-			console.dir(result.data);
-		} catch (error) {
-			console.error(`Error handleLike: ${error.message}`);
+			try {
+				const result = await API.graphql(
+					graphqlOperation(createLike, { input })
+				);
+				console.log(`Liked: ${result.data}`);
+				console.dir(result.data);
+			} catch (error) {
+				console.error(`Error handleLike: ${error.message}`);
+			}
 		}
 	};
 
 	render() {
 		const { posts } = this.state;
+		let loggedInUser = this.state.ownerId;
+
 		return posts.map((post) => {
 			return (
 				<div className='posts' style={rowStyle} key={post.id}>
@@ -174,10 +185,13 @@ class DisplayPosts extends Component {
 					<br />
 
 					<span>
-						<DeletePost data={post} />
-						<EditPost {...post} />
+						{post.postOwnerId === loggedInUser && <DeletePost data={post} />}
+						{post.postOwnerId === loggedInUser && <EditPost {...post} />}
 
 						<span>
+							<p className='alert'>
+								{post.postOwnerId === loggedInUser && this.state.errorMessage}
+							</p>
 							<p onClick={() => this.handleLike(post.id)}>
 								<FaThumbsUp />
 								{post.likes.items.length}
